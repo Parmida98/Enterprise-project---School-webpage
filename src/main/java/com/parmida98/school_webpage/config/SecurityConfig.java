@@ -1,5 +1,6 @@
 package com.parmida98.school_webpage.config;
 
+import com.parmida98.school_webpage.security.jwt.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

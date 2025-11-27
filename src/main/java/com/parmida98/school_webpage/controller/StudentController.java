@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/student")
-@PreAuthorize("hasRole('STUDENT')") // Alla endpoints i denna controller kräver ROLE_STUDENT
+@PreAuthorize("hasRole('STUDENT')")
 public class StudentController {
 
     @GetMapping("/schedule")

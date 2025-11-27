@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/admin")
-@PreAuthorize("hasRole('ADMIN')") // Alla endpoints kräver ROLE_ADMIN
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     @GetMapping("/dashboard")
