@@ -1,13 +1,20 @@
 package com.parmida98.school_webpage.security;
 
 import com.parmida98.school_webpage.security.jwt.JwtUtils;
+import com.parmida98.school_webpage.user.CustomUser;
 import com.parmida98.school_webpage.user.CustomUserDetails;
+import com.parmida98.school_webpage.user.RegistrationService;
 import com.parmida98.school_webpage.user.dto.CustomUserLoginDTO;
+import com.parmida98.school_webpage.user.dto.CustomUserResponseDTO;
+import com.parmida98.school_webpage.user.dto.RegisterStudentDTO;
+import com.parmida98.school_webpage.user.mapper.CustomUserMapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,12 +31,31 @@ public class AuthenticationRestController {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
+    private final RegistrationService registrationService;
+    private final CustomUserMapper customUserMapper;
 
     @Autowired
-    public AuthenticationRestController(JwtUtils jwtUtils, AuthenticationManager authenticationManager) {
+    public AuthenticationRestController(JwtUtils jwtUtils, AuthenticationManager authenticationManager, RegistrationService registrationService, CustomUserMapper customUserMapper) {
         this.jwtUtils = jwtUtils;                               // används för att generera JWT-token.
         this.authenticationManager = authenticationManager;     // Spring Security-komponent som utför själva autentiseringen (kontrollerar användarnamn/lösenord).
+        this.registrationService = registrationService;
+        this.customUserMapper = customUserMapper;
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<CustomUserResponseDTO> registerStudent(@Valid @RequestBody RegisterStudentDTO registerStudentDTO) {
+
+        CustomUser created = registrationService.registerStudent(registerStudentDTO);
+
+        CustomUserResponseDTO responseDTO = customUserMapper.toUsernameDTO(created); // För att vara framtidssäker om DTO ändras
+
+        logger.info("New student created: {}", responseDTO);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(responseDTO);
+    }
+
 
     // TODO - Test against permissions
     // TODO - Typed ResponseEntity (?)
