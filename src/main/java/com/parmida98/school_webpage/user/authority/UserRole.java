@@ -31,7 +31,7 @@ public enum UserRole {
     ADMIN(
             UserRoleName.ADMIN.getRoleName(),
             Set.of(
-                    SEE_SCHEDULE,
+                    REGISTER_STUDENT,
                     GRADE_ASSIGMENT,
                     DELETE_USER
             )

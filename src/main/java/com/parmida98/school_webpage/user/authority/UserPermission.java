@@ -13,6 +13,7 @@ public enum UserPermission {
     SEE_SCHEDULE("SEE_SCHEDULE"),
     SUBMIT_ASSIGMENT("SUBMIT_ASSIGNMENT"),
     GRADE_ASSIGMENT("GRADE_ASSIGNMENT"),
+    REGISTER_STUDENT("REGISTER_STUDENT"),
     DELETE_USER("DELETE_USER");
 
     private final String userPermission;

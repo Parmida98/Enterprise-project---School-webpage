@@ -1,5 +1,7 @@
-package com.parmida98.school_webpage.user;
+package com.parmida98.school_webpage.user.register;
 
+import com.parmida98.school_webpage.user.CustomUser;
+import com.parmida98.school_webpage.user.CustomUserRepository;
 import com.parmida98.school_webpage.user.dto.RegisterStudentDTO;
 import com.parmida98.school_webpage.user.mapper.CustomUserMapper;
 import org.springframework.stereotype.Service;

@@ -8,8 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Endpoints som bara STUDENT ska nå.
- * Visar både roll (ROLE_STUDENT) och permissions (SEE_SCHEDULE, SUBMIT_ASSIGNMENT).
+ * Visar både roll och permissions.
  */
+
 @RestController
 @RequestMapping("/student")
 @PreAuthorize("hasRole('STUDENT')")
@@ -18,13 +19,13 @@ public class StudentController {
     @GetMapping("/schedule")
     @PreAuthorize("hasAuthority('SEE_SCHEDULE')")
     public String getSchedule() {
-        return "Här är ditt schema (datum).";
+        return "Your schedule for the week.";
     }
 
     @PostMapping("/assignments/submit")
     @PreAuthorize("hasAuthority('SUBMIT_ASSIGNMENT')")
     public String submitAssignment() {
-        return "Din inlämning har registrerats.";
+        return "Your assignments have been submitted.";
     }
 }
 
