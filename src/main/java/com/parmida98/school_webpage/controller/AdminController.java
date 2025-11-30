@@ -1,11 +1,15 @@
 package com.parmida98.school_webpage.controller;
 
+import com.parmida98.school_webpage.user.CustomUser;
+import com.parmida98.school_webpage.user.dto.CustomUserCreationDTO;
+import com.parmida98.school_webpage.user.dto.CustomUserResponseDTO;
+import com.parmida98.school_webpage.user.mapper.CustomUserMapper;
+import com.parmida98.school_webpage.user.register.AdminUserService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Endpoints för ADMIN.
@@ -16,21 +20,48 @@ import org.springframework.web.bind.annotation.RestController;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
+    private final AdminUserService adminUserService;
+    private final CustomUserMapper customUserMapper;
+
+    public AdminController(AdminUserService adminUserService, CustomUserMapper customUserMapper) {
+        this.adminUserService = adminUserService;
+        this.customUserMapper = customUserMapper;
+    }
+
     @GetMapping("/dashboard")
     public String adminDashboard() {
-        return "Admin dashboard - endast ADMIN.";
+
+        return "Admin dashboard - only ADMIN.";
     }
+
+    @PostMapping("/register/student")
+    @PreAuthorize("hasAuthority('REGISTER_STUDENT')")
+    public ResponseEntity<CustomUserResponseDTO> createUser(@Valid @RequestBody CustomUserCreationDTO createAsAdminDTO) {
+
+        CustomUser created = adminUserService.createUser(createAsAdminDTO);
+
+        CustomUserResponseDTO responseDTO = customUserMapper.toUsernameDTO(created);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(responseDTO);
+    }
+
 
     @GetMapping("/grade")
     @PreAuthorize("hasAuthority('GRADE_ASSIGNMENT')")
     public String gradeAssignment() {
-        return "Här kan ADMIN rätta uppgifter (endpoint).";
+        return "ADMIN can grade assignments.";
     }
 
-    @DeleteMapping("/users/{id}")
+
+    @DeleteMapping("/student/{id}")
     @PreAuthorize("hasAuthority('DELETE_USER')")
-    public String deleteUser(@PathVariable String id) {
-        return "Användare med id " + id + " raderad.";
+    public String deleteStudent(@PathVariable String id) {
+
+        adminUserService.deleteStudentById(id);
+
+        return "Student with id " + id + " is deleted.";
     }
 }
 
