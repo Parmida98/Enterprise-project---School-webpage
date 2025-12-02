@@ -7,12 +7,6 @@ import lombok.Setter;
 import java.util.Set;
 import java.util.UUID;
 
-/** Entity - Separation of Concerns
- * This SHOULD NOT implement CustomUserDetails
- * Handle CustomUserDetails separately as its own class for better SoC
- * Should however, reflect CustomUserDetails Variables as best practice
- * */
-
 @Table(name = "users")
 @Entity
 public class CustomUser {
@@ -24,26 +18,40 @@ public class CustomUser {
     @Setter
     @Column(unique = true, nullable = false)
     private String username;
+
     @Setter
     @Column(nullable = false)
     private String password;
+
     @Setter
     private boolean isAccountNonExpired;
+
     @Setter
     private boolean isAccountNonLocked;
+
     @Setter
     private boolean isCredentialsNonExpired;
+
     @Setter
     private boolean isEnabled;
 
     @Setter
-    @ElementCollection(targetClass = UserRole.class, fetch = FetchType.EAGER) // Fetch Immediately
+    @Column(unique = true)
+    private String email;
+
+    @Setter
+    @ElementCollection(targetClass = UserRole.class, fetch = FetchType.EAGER)
     @Enumerated(value = EnumType.STRING)
     private Set<UserRole> roles;
 
-    // Constructors
     public CustomUser() {}
-    public CustomUser(String username, String password, boolean isAccountNonExpired, boolean isAccountNonLocked, boolean isCredentialsNonExpired, boolean isEnabled, Set<UserRole> roles) {
+
+    public CustomUser(String username,String password,
+                      boolean isAccountNonExpired,
+                      boolean isAccountNonLocked,
+                      boolean isCredentialsNonExpired,
+                      boolean isEnabled,
+                      Set<UserRole> roles) {
         this.username = username;
         this.password = password;
         this.isAccountNonExpired = isAccountNonExpired;
@@ -85,4 +93,13 @@ public class CustomUser {
         return roles;
     }
 
+    public String getEmail() {
+        return email;
+    }
 }
+
+/** Entity - Separation of Concerns
+ * This SHOULD NOT implement CustomUserDetails
+ * Handle CustomUserDetails separately as its own class for better SoC
+ * Should however, reflect CustomUserDetails Variables as best practice
+ * */

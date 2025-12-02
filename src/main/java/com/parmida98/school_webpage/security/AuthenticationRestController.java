@@ -1,5 +1,6 @@
 package com.parmida98.school_webpage.security;
 
+import com.parmida98.school_webpage.email.EmailProducer;
 import com.parmida98.school_webpage.security.jwt.JwtUtils;
 import com.parmida98.school_webpage.user.CustomUser;
 import com.parmida98.school_webpage.user.CustomUserDetails;
@@ -33,13 +34,15 @@ public class AuthenticationRestController {
     private final AuthenticationManager authenticationManager;
     private final RegistrationService registrationService;
     private final UserMapper userMapper;
+    private final EmailProducer emailProducer;
 
 
-    public AuthenticationRestController(JwtUtils jwtUtils, AuthenticationManager authenticationManager, RegistrationService registrationService, UserMapper userMapper) {
+    public AuthenticationRestController(JwtUtils jwtUtils, AuthenticationManager authenticationManager, RegistrationService registrationService, UserMapper userMapper, EmailProducer emailProducer) {
         this.jwtUtils = jwtUtils;
         this.authenticationManager = authenticationManager;
         this.registrationService = registrationService;
         this.userMapper = userMapper;
+        this.emailProducer = emailProducer;
     }
 
     @PostMapping("/register")
@@ -82,30 +85,6 @@ public class AuthenticationRestController {
                     ));
         }
 
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("========= AUTHENTICATION RESULT =========");
-            logger.debug("Class: {}", authentication.getClass().getSimpleName());
-            logger.debug("Authenticated: {}", authentication.isAuthenticated());
-
-            Object principal = authentication.getPrincipal();
-            logger.debug("Principal type: {}", principal.getClass().getSimpleName());
-
-            if (principal instanceof CustomUserDetails customUserDetails) {
-                logger.debug("Username: {}", customUserDetails.getUsername());
-                logger.debug("Authorities: {}", customUserDetails.getAuthorities());
-                logger.debug("Account Non Locked: {}", customUserDetails.isAccountNonLocked());
-                logger.debug("Account Enabled: {}", customUserDetails.isEnabled());
-            } else {
-                logger.debug("Principal value: {}", principal);
-            }
-
-            logger.debug("Credentials: {}", authentication.getCredentials());
-            logger.debug("Details: {}", authentication.getDetails());
-            logger.debug("Authorities: {}", authentication.getAuthorities());
-            logger.debug("=========================================");
-        }
-
         // 2: Extract your custom principal
         CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
 
@@ -125,7 +104,12 @@ public class AuthenticationRestController {
         cookie.setMaxAge(3600);
         response.addCookie(cookie);                         // Lägger till cookien i HTTP-svaret → skickas till klienten (browsern).
 
+        CustomUser customUser = customUserDetails.getCustomUser();
+
         logger.info("Authentication successful for user: {}", userLoginDTO.username());
+
+        // Skicka mejl via RabbitMQ
+        emailProducer.sendLoginEmail(customUser.getEmail());
 
         /* 5: Return token
         Klienten (ex frontend) får token både:
