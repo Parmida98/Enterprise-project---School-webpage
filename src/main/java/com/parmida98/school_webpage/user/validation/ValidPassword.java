@@ -2,6 +2,7 @@ package com.parmida98.school_webpage.user.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
+import jakarta.validation.ReportAsSingleViolation;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
@@ -15,6 +16,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Documented
 @Constraint(validatedBy = {})
+@ReportAsSingleViolation
 @Target({ FIELD, PARAMETER })
 @Retention(RUNTIME)
 @Pattern(
@@ -22,16 +24,15 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
                 "(?=.*[a-z])" +        // at least one lowercase letter
                 "(?=.*[A-Z])" +        // at least one uppercase letter
                 "(?=.*[0-9])" +        // at least one digit
-                "(?=.*[ @$!%*?&])" +   // at least one special character
-                ".+$",
-        message = "Password must contain at least one uppercase, one lowercase, one digit, and one special character"
+                "(?=.*[@$!%*?&])" +   // at least one special character
+                "[A-Za-z0-9 @$!%*?&]+$"
 )
-@Size(max = 80, message = "Maximum length of password exceeded")
+@Size(min = 8, max = 80)
 public @interface ValidPassword {
 
     String message() default "Invalid password";
 
-    Class[] groups() default {};
+    Class<?>[] groups() default {};                     // Standard för alla Bean Validation-annotations
 
-    Class[] payload() default {};
+    Class<? extends Payload>[] payload() default {};
 }

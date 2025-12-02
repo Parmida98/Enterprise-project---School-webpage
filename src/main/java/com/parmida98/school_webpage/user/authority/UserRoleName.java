@@ -5,14 +5,6 @@ package com.parmida98.school_webpage.user.authority;
  *   This ENUM is essentially just a value holder
  * */
 
-/*
-Denna enum:
-✔ Centraliserar rollnamn
-✔ Säkerställer korrekt ROLE_-prefix
-✔ Undviker magiska strängar
-✔ Gör kod mer konsekvent och lättare att ändra
- */
-
 public enum UserRoleName {
 
     STUDENT("ROLE_STUDENT"),

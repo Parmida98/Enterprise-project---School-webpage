@@ -2,6 +2,7 @@ package com.parmida98.school_webpage.user.validation;
 
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
+import jakarta.validation.ReportAsSingleViolation;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -15,15 +16,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Documented
 @Constraint(validatedBy = {}) // ingen egen validator behövs – komponerar bara befintliga
+@ReportAsSingleViolation
 @Target({ FIELD, PARAMETER })
 @Retention(RUNTIME)
 @Size(min = 2, max = 25, message = "Username length should be between 2-25")
-@NotBlank(message = "Username may not contain whitespace characters only")
+@NotBlank(message = "Username may not contain whitespace, characters only")
 public @interface ValidUsername {
 
     String message() default "Invalid username";
 
-    Class[] groups() default {};
+    Class<?>[] groups() default {};                     // Standard för alla Bean Validation-annotations
 
-    Class[] payload() default {};
+    Class<? extends Payload>[] payload() default {};   // Standard för alla Bean Validation-annotations
+
 }

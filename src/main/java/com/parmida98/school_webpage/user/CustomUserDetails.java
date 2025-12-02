@@ -2,7 +2,6 @@ package com.parmida98.school_webpage.user;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -10,16 +9,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-/** UserDetails - Custom Implementation
+/** CustomUserDetails - Custom Implementation
  *   Why:
  *      - SoC, offload the CustomUser: Entity
  *      - Override for Custom Logic (e.g: loading authorities through Enum)
- *      - Spring handles Authentication Logic behind the scenes using UserDetails class
+ *      - Spring handles Authentication Logic behind the scenes using CustomUserDetails class
  *      - Entity preferably LIVES within CustomUserDetails
- *      - TODO - Implement as a component?
  * */
 
-public class CustomUserDetails implements UserDetails {
+public class CustomUserDetails implements org.springframework.security.core.userdetails.UserDetails {
 
     private final CustomUser customUser;
 
@@ -27,19 +25,13 @@ public class CustomUserDetails implements UserDetails {
         this.customUser = customUser;
     }
 
-    /** UserRole.getAuthorities
-     *      Returns: ROLE + PERMISSIONS [ROLE_ADMIN, READ, WRITE, DELETE]
-     *      IF you have two roles... [[ROLE_ADMIN, READ, WRITE], [ROLE_GUEST]]
-     *      List<List<SimpleGrantedAuthority>>
-     * */
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 
         final Set<SimpleGrantedAuthority> authorities = new HashSet<>();
 
         customUser.getRoles().forEach(
-                userRole -> authorities.addAll(userRole.getUserAuthorities()) // Merge arrays
+                userRole -> authorities.addAll(userRole.getUserAuthorities())
         );
 
         return Collections.unmodifiableSet(authorities); // Make List 'final' through 'unmodifiable'

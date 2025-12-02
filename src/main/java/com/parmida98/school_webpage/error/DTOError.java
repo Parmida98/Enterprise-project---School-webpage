@@ -1,9 +1,9 @@
 package com.parmida98.school_webpage.error;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record DTOError(
-        LocalDateTime timestamp,
+        OffsetDateTime timestamp,
         int status,
         String error,
         String message,

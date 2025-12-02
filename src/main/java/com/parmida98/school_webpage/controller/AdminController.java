@@ -1,9 +1,10 @@
 package com.parmida98.school_webpage.controller;
 
 import com.parmida98.school_webpage.user.CustomUser;
-import com.parmida98.school_webpage.user.dto.CustomUserCreationDTO;
-import com.parmida98.school_webpage.user.dto.CustomUserResponseDTO;
-import com.parmida98.school_webpage.user.mapper.CustomUserMapper;
+import com.parmida98.school_webpage.user.dto.MessageDTO;
+import com.parmida98.school_webpage.user.dto.UserCreationDTO;
+import com.parmida98.school_webpage.user.dto.UserResponseDTO;
+import com.parmida98.school_webpage.user.mapper.UserMapper;
 import com.parmida98.school_webpage.user.register.AdminUserService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,47 +22,46 @@ import org.springframework.web.bind.annotation.*;
 public class AdminController {
 
     private final AdminUserService adminUserService;
-    private final CustomUserMapper customUserMapper;
+    private final UserMapper userMapper;
 
-    public AdminController(AdminUserService adminUserService, CustomUserMapper customUserMapper) {
+    public AdminController(AdminUserService adminUserService, UserMapper userMapper) {
         this.adminUserService = adminUserService;
-        this.customUserMapper = customUserMapper;
+        this.userMapper = userMapper;
     }
 
     @GetMapping("/dashboard")
-    public String adminDashboard() {
-
-        return "Admin dashboard - only ADMIN.";
+    public ResponseEntity<MessageDTO> adminDashboard() {
+        return ResponseEntity.ok(new MessageDTO("Admin dashboard"));
     }
 
     @PostMapping("/register/student")
     @PreAuthorize("hasAuthority('REGISTER_STUDENT')")
-    public ResponseEntity<CustomUserResponseDTO> createUser(@Valid @RequestBody CustomUserCreationDTO createAsAdminDTO) {
+    public ResponseEntity<UserResponseDTO> createStudent(@Valid @RequestBody UserCreationDTO createAsAdminDTO) {
 
         CustomUser created = adminUserService.createUser(createAsAdminDTO);
 
-        CustomUserResponseDTO responseDTO = customUserMapper.toUsernameDTO(created);
+        UserResponseDTO responseDTO = userMapper.toUsernameDTO(created);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(responseDTO);
     }
 
-
     @GetMapping("/grade")
     @PreAuthorize("hasAuthority('GRADE_ASSIGNMENT')")
-    public String gradeAssignment() {
-        return "ADMIN can grade assignments.";
+    public ResponseEntity<MessageDTO> gradeAssignment() {
+        return ResponseEntity.ok(new MessageDTO("ADMIN can grade assignments."));
     }
 
 
     @DeleteMapping("/student/{id}")
     @PreAuthorize("hasAuthority('DELETE_USER')")
-    public String deleteStudent(@PathVariable String id) {
-
+    public ResponseEntity<MessageDTO> deleteStudent(@PathVariable String id) {
         adminUserService.deleteStudentById(id);
 
-        return "Student with id " + id + " is deleted.";
+        return ResponseEntity.ok(
+                new MessageDTO("Student with id " + id + " is deleted.")
+        );
     }
 }
 

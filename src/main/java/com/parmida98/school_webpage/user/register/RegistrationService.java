@@ -1,34 +1,33 @@
 package com.parmida98.school_webpage.user.register;
 
+import com.parmida98.school_webpage.error.exception.UsernameAlreadyExistsException;
 import com.parmida98.school_webpage.user.CustomUser;
-import com.parmida98.school_webpage.user.CustomUserRepository;
+import com.parmida98.school_webpage.user.UserRepository;
 import com.parmida98.school_webpage.user.dto.RegisterStudentDTO;
-import com.parmida98.school_webpage.user.mapper.CustomUserMapper;
+import com.parmida98.school_webpage.user.mapper.UserMapper;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RegistrationService {
 
-    private final CustomUserRepository customUserRepository;
-    private final CustomUserMapper customUserMapper;
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public RegistrationService(CustomUserRepository customUserRepository, CustomUserMapper customUserMapper1) {
-        this.customUserRepository = customUserRepository;
-        this.customUserMapper = customUserMapper1;
+    public RegistrationService(UserRepository userRepository, UserMapper userMapper) {
+        this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
     public CustomUser registerStudent(RegisterStudentDTO registerStudentDTO) {
 
-        CustomUser existing = customUserRepository.findUserByUsername(registerStudentDTO.username())
-                .orElse(null);
+        var existing = userRepository.findUserByUsername(registerStudentDTO.username());
 
-        // Kollar om användarnamnet redan finns
-        if (existing != null) {
-            throw new IllegalArgumentException("Username is already in use");
+        if (existing.isPresent()) {
+            throw new UsernameAlreadyExistsException(registerStudentDTO.username());
         }
 
-        CustomUser student = customUserMapper.toStudentEntity(registerStudentDTO);
+        CustomUser student = userMapper.toStudentEntity(registerStudentDTO);
 
-        return customUserRepository.save(student);
+        return userRepository.save(student);
     }
 }

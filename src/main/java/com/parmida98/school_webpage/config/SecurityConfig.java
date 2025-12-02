@@ -1,19 +1,21 @@
 package com.parmida98.school_webpage.config;
 
+import com.parmida98.school_webpage.error.DTOError;
+import com.parmida98.school_webpage.error.ErrorFactory;
 import com.parmida98.school_webpage.security.jwt.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import com.parmida98.school_webpage.user.authority.UserRole;
-
+import tools.jackson.databind.ObjectMapper;
 
 @Configuration
 @EnableWebSecurity // säger att den här klassen innehåller säkerhetskonfiguration.
@@ -21,47 +23,66 @@ import com.parmida98.school_webpage.user.authority.UserRole;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ObjectMapper objectMapper;
+    private final ErrorFactory errorFactory;
 
-    @Autowired
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) { // lagrar det injicerade filtret i fältet så du kan använda det senare i securityFilterChain.
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper, ErrorFactory errorFactory) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.objectMapper = objectMapper;
+        this.errorFactory = errorFactory;
     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager(); // Handles: Password Encoder, UserDetailsService, Authentication
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception { // definierar hela säkerhetskedjan: vilka filter som används, vilka endpoints som är skyddade, sessionpolicy osv.
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
-        /* TODO - If we try to move to a resource that isn't available, we have to login to get a 404
-         *   This is unclear and can be made better
-         *   Why login to see a 404? Is this secure?
-         * */
+        httpSecurity
+                .csrf(AbstractHttpConfigurer::disable)                                  // CSRF stängs av eftersom vi använder JWT
+                .authorizeHttpRequests( auth -> auth     // Startar konfigurationen för autorisering – dvs vilka requests som får göras av vem.
+                        .requestMatchers("/", "/login","/register").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/student/**").hasRole("STUDENT")
 
-        // TODO Memory Storage Attack - https://docs.spring.io/spring-security/reference/servlet/authentication/passwords/erasure.html
-
-        httpSecurity // Startar en konfiguration kedja på httpSecurity-objektet. Du bygger nu upp alla regler med "fluent API" (kedjade anrop).
-                .csrf(csrfConfigurer -> csrfConfigurer.disable())   // TODO - JWT, best practice? // en lambda som säger "stäng av CSRF".
-                .authorizeHttpRequests( auth -> auth                      // Startar konfigurationen för autorisering – dvs vilka requests som får göras av vem.
-                        // .requestMatchers() // TODO - check against specific HTTP METHOD
-                        .requestMatchers("/", "/register", "/static/**", "/login").permitAll()  // Allow localhost:8080/ / ska vara öppna för alla (ingen inloggning krävs). .permitAll() → betyder att dessa endpoints inte kräver autentisering.
-                        .requestMatchers("/debug/**").permitAll()                                     // RestController for Debugging / Tillåter alla requests som matchar /debug/** utan inloggning.
-
-                        .requestMatchers("/admin", "/tools").hasRole("ADMIN")                       // kräver att användaren har rollen ROLE_ADMIN.
-
-                        .requestMatchers("/student", "/student/**")
-                        .hasRole(UserRole.STUDENT.name())                       // endpointen /user kräver en roll som motsvarar UserRole.USER.name().
-                        .anyRequest().authenticated() // MUST exist AFTER matchers, TODO - Is this true by DEFAULT? // Alla andra requests som inte matchade något av ovan ska kräva autentisering.
+                        .anyRequest().authenticated() // MUST exist AFTER matchers
                 )
 
-                // TODO - If you want (optional), insert configure logic here for CORS
-
-                .sessionManagement(session -> session           //konfigurerar hur Spring ska skapa och hantera HTTP-sessioner.
+                // STATELESS -> lagrar inte inloggning i HTTP-sessioner utan förlitar på JWT i varje request
+                .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+                .exceptionHandling(ex -> ex
+
+                        // 401 – inte inloggad / ingen giltig authentication
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            DTOError error = errorFactory.unauthorized(
+                                    request,
+                                    "You must be logged in to access this resource"
+                            );
+
+                            response.setStatus(error.status());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(response.getOutputStream(), error);
+                        })
+
+                        // 403 – inloggad, men saknar rätt roll/authority
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            DTOError error = errorFactory.forbidden(
+                                    request,
+                                    "You do not have permission to access this"
+                            );
+
+                            response.setStatus(error.status());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            objectMapper.writeValue(response.getOutputStream(), error);
+                        })
+                )
+
+                // Läs JWT från requesten och sätt Authentication innan standard-auth-filtret körs
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();

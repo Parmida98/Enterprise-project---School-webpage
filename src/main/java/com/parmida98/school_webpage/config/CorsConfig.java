@@ -16,7 +16,7 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://172.0.0.1:3000"));
+        config.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "DELETE"));
         config.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Requested-With"));
 
@@ -24,7 +24,7 @@ public class CorsConfig {
 
         // Backend paths
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // // ENABLE EVERYTHING
+        source.registerCorsConfiguration("/**", config); // Enable CORS for all backend paths with the above rules
 
         return source;
     }

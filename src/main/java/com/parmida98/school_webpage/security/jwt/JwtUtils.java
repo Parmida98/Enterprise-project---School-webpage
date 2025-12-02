@@ -4,9 +4,7 @@ import com.parmida98.school_webpage.user.CustomUser;
 import com.parmida98.school_webpage.user.authority.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SecureDigestAlgorithm;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -17,21 +15,11 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-// Denna klass ansvarar för:
-//✅ Skapa JWT-token
-//✅ Signera dem säkert
-//✅ Plocka ut användarnamn
-//✅ Plocka ut roller
-//✅ Validera tokens
-//✅ Hämta token från cookies eller headers
-
-
-// gör klassen till en Spring-bean som kan injiceras i andra klasser.
+// Klassen samlar all logik kring skapande, läsning och validering av JWT.
 @Component
-public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och validering av JWT.
+public class JwtUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
@@ -49,23 +37,24 @@ public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och
     }
 
     // Definierar giltighetstiden för JWT till 1 timme uttryckt i millisekunder.
-    public String generateJwtToken(CustomUser customUser) { // TODO - CustomUserDetails
-        logger.debug("Generating JWT for user: {} with roles: {}", customUser.getUsername(), customUser.getRoles());
+    public String generateJwtToken(CustomUser customUser) {
+        logger.debug("Generating JWT for customUser: {} with roles: {}", customUser.getUsername(), customUser.getRoles());
 
         // Hämtar roller från användaren. Konverterar varje UserRole till dess strängnamn. Resultatet blir en lista av rollnamn som ska in i token.
-        List<String> roles = customUser.getRoles().stream().map(
-                userRole -> userRole.getRoleName()
-        ).toList();
+        List<String> roles = customUser.getRoles().stream()
+                .map(UserRole::getRoleName)
+                .toList();
 
+        // Skapar Header, Payload, Signature
         String token = Jwts.builder()
-                .subject(customUser.getUsername())                                    // Sätter subject (sub) i token till användarnamnet.
-                .claim("authorities", roles)                                       // Sätter subject (sub) i token till användarnamnet.
-                .issuedAt(new Date())                                                // Skapar en custom claim med namnet authorities som innehåller användarens roller.
-                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs)) // Sätter när token ska löpa ut (exp).
-                .signWith(key)                                                      // Signerar token med din hemliga HMAC-nyckel. TODO - signWith using a predefined Algorithm. //.signWith(key, SignatureAlgorithm)
-                .compact();                                                         // Bygger ihop och serialiserar token till en sträng.
+                .subject(customUser.getUsername())
+                .claim("authorities", roles)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(key)              // .signWith(key, SignatureAlgorithm är deprecated enligt Intellij
+                .compact();
 
-        logger.info("JWT generated successfully for user: {}", customUser.getUsername());
+        logger.info("JWT generated successfully for customUser: {}", customUser.getUsername());
         return token;
     }
 
@@ -77,50 +66,52 @@ public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
+
             String username = claims.getSubject(); // Subject, whom the token refers to, principal: whose currently authenticated (system)
             logger.debug("Extracted username '{}' from JWT token", username);
             return username;
 
         } catch (Exception e) {
-            logger.warn("Failed to extract username from token: {}", e.getMessage());
+            logger.warn("Failed to extract username from JWT token", e);
             return null;
         }
     }
 
+    // Hämtar roller från JWT. Returnerar tom Set vid fel.
     public Set<UserRole> getRolesFromJwtToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+        try {
+            Claims claims = Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-        List<?> authoritiesClaim = claims.get("authorities", List.class); // Hämtar claimen authorities som en lista.
+            List<String> authoritiesClaim = claims.get("authorities", List.class); // Hämtar claimen authorities som en lista.
 
-        if (authoritiesClaim == null || authoritiesClaim.isEmpty()) {
-            logger.warn("No authorities found in JWT token");
+            if (authoritiesClaim == null || authoritiesClaim.isEmpty()) {
+                logger.warn("No authorities found in JWT token");
+                return Set.of();
+            }
+
+            Set<UserRole> roles = authoritiesClaim.stream()
+                    .map(role -> role.replace("ROLE_", ""))
+                    .map(String::toUpperCase)
+                    .map(UserRole::valueOf)
+                    .collect(Collectors.toSet());
+
+            logger.debug("Extracted roles from JWT token: {}", roles);
+            return roles;
+
+        } catch (Exception e) {
+            logger.warn("Failed to extract roles from JWT token", e);
             return Set.of();
         }
-
-        // Convert each string like "ROLE_USER" -> UserRole.USER
-        Set<UserRole> roles = authoritiesClaim.stream()                              // Startar konverteringskedja.
-                .filter(String.class::isInstance)                                   // keep only strings
-                .map(String.class::cast)                                            // Castar till String.
-                .map(role -> role.replace("ROLE_", ""))     // remove prefix if necessary
-                .map(String::toUpperCase)
-                .map(UserRole::valueOf)                                             // Konverterar strängen till enum-värde UserRole.
-                .collect(Collectors.toSet());                                       // Samlar resultatet i en Set.
-
-        logger.debug("Extracted roles from JWT token: {}", roles);
-        return roles;
     }
+
 
     // Used to pass in JWT token for Validation
     public boolean validateJwtToken(String authToken) {
         try {
-            // Försöker parsa och verifiera token. Misslyckas om:
-            //token är ogiltig
-            //fel signatur
-            //utgången
             Jwts.parser()
                     .verifyWith(key)
                     .build()
@@ -130,7 +121,7 @@ public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och
             return true;
 
         } catch (Exception e) {
-            logger.error("JWT validation failed: {}", e.getMessage());
+            logger.warn("JWT validation failed", e);
         }
 
         return false;
@@ -141,7 +132,7 @@ public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och
     String extractJwtFromCookie(HttpServletRequest request) {
         if (request.getCookies() == null) return null;
         for (Cookie cookie : request.getCookies()) {
-            if ("authToken".equals(cookie.getName())) {     // Cookie should be named authToken
+            if ("authToken".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }
@@ -152,7 +143,7 @@ public class JwtUtils { // Klassen samlar all logik kring skapande, läsning och
     String extractJwtFromRequest(HttpServletRequest request) {
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7);     // Tar bort "Bearer " och returnerar själva token.
+            return header.substring(7);     // Tar bort "Bearer" och returnerar själva token.
         }
         return null;
     }
