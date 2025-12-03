@@ -2,11 +2,13 @@ package com.parmida98.school_webpage.user;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CustomUserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
+public class CustomUserDetailsService implements UserDetailsService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final UserRepository userRepository;
@@ -18,14 +20,13 @@ public class CustomUserDetailsService implements org.springframework.security.co
 
     // Spring Security anropar denna metod när: någon försöker logga in, JWT ska verifieras, användardata behövs
     @Override
-    public org.springframework.security.core.userdetails.UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         CustomUser customUser = userRepository.findUserByUsername(username)
-                .orElseThrow(
-                        () -> new UsernameNotFoundException("Student with username " + username + " was not found")
-                );
-        logger.warn("Student not found {}", username);
-
+                .orElseThrow(() -> {
+                    logger.warn("Student not found {}", username);
+                    return new UsernameNotFoundException("Student with username " + username + " was not found");
+                });
         return new CustomUserDetails(customUser); // CustomUserDetails contains an Entity
     }
 }
