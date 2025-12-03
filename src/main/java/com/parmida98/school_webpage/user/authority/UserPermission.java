@@ -5,14 +5,11 @@ package com.parmida98.school_webpage.user.authority;
  *       TODO_READ, TODO_DELETE, USER_READ, USER_DELETE etc...
  * */
 
-// Den skapar en kontrollerad lista över tillåtna rättigheter som kan användas i Spring Security, t.ex.:
-//Istället för att använda hårdkodade strängar överallt, använder du enums -> säkrare och mer självdokumenterande kod.
-
 public enum UserPermission {
 
     SEE_SCHEDULE("SEE_SCHEDULE"),
-    SUBMIT_ASSIGMENT("SUBMIT_ASSIGNMENT"),
-    GRADE_ASSIGMENT("GRADE_ASSIGNMENT"),
+    SUBMIT_ASSIGNMENT("SUBMIT_ASSIGNMENT"),
+    GRADE_ASSIGNMENT("GRADE_ASSIGNMENT"),
     REGISTER_STUDENT("REGISTER_STUDENT"),
     DELETE_USER("DELETE_USER");
 

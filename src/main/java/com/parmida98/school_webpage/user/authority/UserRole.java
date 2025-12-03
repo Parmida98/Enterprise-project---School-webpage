@@ -4,19 +4,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import static com.parmida98.school_webpage.user.authority.UserPermission.*;
 import java.util.*;
 
-
 /* UserRole: Handles Authorities
  *   Should contain both ROLE + PERMISSIONS
  *   Should contain a way to return SimpleGrantedAuthority (Spring Class)
  *   import static - removes the class requirement for Variables (no more dots)
  *       NOTE: The class still exists, but is not necessary to call
  * */
-// Denna enum:
-//✔ Definierar roller
-//✔ Kopplar permissions till roller
-//✔ Översätter till Spring Security-format
-//✔ Centraliserar all behörighetslogik
-//✔ Undviker hårdkodade strängar
 
 public enum UserRole {
 
@@ -24,7 +17,7 @@ public enum UserRole {
             UserRoleName.STUDENT.getRoleName(),
             Set.of(
                     SEE_SCHEDULE,
-                    SUBMIT_ASSIGMENT
+                    SUBMIT_ASSIGNMENT
             )
     ),
 
@@ -32,7 +25,7 @@ public enum UserRole {
             UserRoleName.ADMIN.getRoleName(),
             Set.of(
                     REGISTER_STUDENT,
-                    GRADE_ASSIGMENT,
+                    GRADE_ASSIGNMENT,
                     DELETE_USER
             )
     );

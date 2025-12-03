@@ -1,14 +1,13 @@
 package com.parmida98.school_webpage.security.jwt;
 
 import com.parmida98.school_webpage.user.CustomUserDetailsService;
-import io.micrometer.common.lang.NonNull;
+import org.springframework.lang.NonNull;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,15 +17,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Component // säger till Spring att den här klassen är en bean som ska skapas automatiskt och kunna injiceras.
+@Component //klassen är en bean som ska skapas automatiskt och kunna injiceras
 public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör detta till ett Servlet-filter som körs en gång per request.
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtUtils jwtUtils;
-    private final CustomUserDetailsService customUserDetailsService; // TODO - Change to UserDetailsService
+    private final CustomUserDetailsService customUserDetailsService;
 
-    @Autowired
     public JwtAuthenticationFilter(JwtUtils jwtUtils,
                                    CustomUserDetailsService customUserDetailsService) {
         this.jwtUtils = jwtUtils;
@@ -37,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör 
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,    // inkommande HTTP-request (headers, cookies, body, etc.)
-            @NonNull HttpServletResponse response,  // nkommande HTTP-request (headers, cookies, body, etc.)
+            @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain        // Decides when a filterChain stops / används för att skicka vidare request/response till nästa filter i kedjan
     ) throws ServletException, IOException {
 
@@ -46,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör 
         // Extract token
         String token = jwtUtils.extractJwtFromCookie(request);  // Försöker först läsa JWT-token från en cookie i requesten.
         if (token == null) {
-            token = jwtUtils.extractJwtFromRequest(request); // fallback to Authorization header / försök igen genom att läsa från t.ex. Authorization-headern (Bearer <token>)
+            token = jwtUtils.extractJwtFromRequest(request); // försök igen genom att läsa från t.ex. Authorization-headern (Bearer <token>)
         }
 
         if (token == null) {
@@ -55,13 +53,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör 
             return;
         }
 
-        logger.debug("JWT token found: {}", token);
+        logger.debug("JWT token found");
 
-        // Kontrollerar om token är:
-        // korrekt signerad
-        // inte utgången (expiration)
-        // har rätt struktur
-        // Om validateJwtToken returnerar true går vi vidare.
+        // Kontrollerar om token är: korrekt signerad, inte utgången, har rätt struktur. Om validateJwtToken returnerar true går vi vidare
         // Validate token
         if (jwtUtils.validateJwtToken(token)) {
             String username = jwtUtils.getUsernameFromJwtToken(token);
@@ -74,7 +68,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör 
 
                 // Possibility to check for other userDetails booleans
                 if (userDetails != null && userDetails.isEnabled()) {
-                    // Detta objekt representerar en autentiserad användare i Spring Security.
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -87,12 +80,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {     // gör 
 
                     // Sätter in authentication i SecurityContext
                     // SecurityContext hålls thread-local per request
-                    // Efter denna rad betraktas användaren som inloggad/autentiserad i resten av request-flödet (controllers, services osv.).
+                    // Efter denna rad ses användaren som inloggad/autentiserad i resten av request-flödet (controllers, services osv.).
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
                     logger.debug("Authenticated (DB verified) user '{}'", username);
                 } else {
-                    logger.warn("User '{}' not found or disabled", username);
+                    logger.warn("CustomUser '{}' not found or disabled", username);
                 }
             }
         } else {
