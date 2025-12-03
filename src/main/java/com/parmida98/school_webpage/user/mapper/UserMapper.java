@@ -44,7 +44,6 @@ public class UserMapper {
     public CustomUser toStudentEntity(RegisterStudentDTO registerStudentDTO) {
         String encodedPassword = passwordEncoder.encode(registerStudentDTO.password());
 
-
         CustomUser student = new CustomUser(
                 registerStudentDTO.username(),
                 encodedPassword,
@@ -55,8 +54,11 @@ public class UserMapper {
                 Set.of(UserRole.STUDENT)
         );
 
+        student.setEmail(registerStudentDTO.email());
+
         return student;
     }
+
 
     //Säker exponering av användardata till frontend.
     public UserResponseDTO toUsernameDTO(CustomUser customUser) {
